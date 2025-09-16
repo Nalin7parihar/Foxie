@@ -1,0 +1,6 @@
+.qodo
+uv.lock
+.env
+pycache/
+__pycache__/
+.venv

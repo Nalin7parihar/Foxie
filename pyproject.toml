@@ -6,6 +6,14 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "google-genai>=1.37.0",
+    "passlib[all]>=1.7.4",
+    "psycopg2[binary]>=2.9.10",
+    "pydantic-settings>=2.10.1",
+    "pydantic[email]>=2.11.9",
     "python-dotenv>=1.1.1",
+    "python-jose>=3.5.0",
+    "questionary>=2.1.1",
+    "requests>=2.32.5",
+    "sqlalchemy[asyncio]>=2.0.43",
     "typer[all]>=0.17.4",
 ]

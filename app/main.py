@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from app.routers import auth,users,generate
 from app.core.databases import create_tables
-
+from app.services.logmiddleware import LogMiddleware
 
 app=FastAPI()
 
+app.add_middleware(LogMiddleware)
 # Create database tables on startup
 @app.on_event("startup")
 async def startup_event():

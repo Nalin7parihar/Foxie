@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "foxie"
 version = "0.1.0"
@@ -5,16 +9,13 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "google-genai>=1.37.0",
-    "passlib[all]>=1.7.4",
-    "psycopg2[binary]>=2.9.10",
-    "pydantic-settings>=2.10.1",
-    "pydantic[email]>=2.11.9",
-    "pyjwt>=2.10.1",
+    "dotenv>=0.9.9",
+    "google-genai>=1.45.0",
+    "instructor>=1.11.3",
+    "pydantic>=2.12.0",
     "python-dotenv>=1.1.1",
-    "python-jose>=3.5.0",
-    "questionary>=2.1.1",
-    "requests>=2.32.5",
-    "sqlalchemy[asyncio]>=2.0.43",
-    "typer[all]>=0.17.4",
+    "typer>=0.19.2",
 ]
+
+[project.scripts]
+foxie = "foxie_cli.cli:app"

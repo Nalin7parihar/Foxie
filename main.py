@@ -1,8 +1,4 @@
-
-
-def main():
-    print("Hello, World!")
-
+from foxie_cli.cli import app
 
 if __name__ == "__main__":
-    main()
+    app()

@@ -1,8 +1,45 @@
 import os
 import typer
+import subprocess
 from foxie_cli.core.models import GeneratedCode
 
-def write_files(generated_code: GeneratedCode, base_dir: str = "."):
+
+def unfence_code(code_string: str) -> str:
+    """
+    Strips the Markdown code fences (```python...```) from a string.
+    """
+    # Find the start of the Python code block
+    start_fence = code_string.find("```python\n")
+    if start_fence == -1:
+        # If ```python is not found, try finding just ```
+        start_fence = code_string.find("```\n")
+        if start_fence == -1:
+            return code_string # No fence found, return original string
+
+    # Adjust start position to be after the fence
+    start_pos = start_fence + code_string[start_fence:].find('\n') + 1
+
+    # Find the end fence
+    end_fence = code_string.rfind("```")
+    if end_fence == -1:
+        return code_string # No end fence found, return original string
+
+    # Return the content between the fences
+    return code_string[start_pos:end_fence].strip()
+
+def format_python_file(file_path : str):
+    """
+    Formats a Python file using Black.
+    """
+    try:
+        subprocess.run(['black', '--quiet', file_path], check=True)
+        typer.secho(f"  🎨 Formatted: {file_path}", fg=typer.colors.CYAN)
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        typer.secho(f"  ❌ Error formatting file {file_path}: {e}", fg=typer.colors.RED)
+        return False
+
+def write_files(generated_code: GeneratedCode, base_dir: str ):
     """
     Writes the generated code files to the specified base directory.
 
@@ -26,12 +63,19 @@ def write_files(generated_code: GeneratedCode, base_dir: str = "."):
             # Create the directory if it doesn't exist
             if directory:
                 os.makedirs(directory, exist_ok=True)
+            
+            clean_content = unfence_code(code_file.content)
 
             # Write the file content
             with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(code_file.content)
+                f.write(clean_content)
             
             typer.secho(f"  ✅ Created: {file_path}", fg=typer.colors.GREEN)
+            
+            if file_path.endswith('.py'):
+                formatted = format_python_file(file_path)
+                if formatted:
+                    typer.secho(f"  ✅ Formatted: {file_path}", fg=typer.colors.BRIGHT_BLACK)
 
         except OSError as e:
             typer.secho(f"  ❌ Error creating file {file_path}: {e}", fg=typer.colors.RED)

@@ -56,6 +56,7 @@ pip install -e .
 ## ⚙️ Configuration
 
 1. **Get a Google AI API Key**:
+
    - Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
    - Create a new API key
 
@@ -220,18 +221,21 @@ Generated FastAPI applications include automatic API documentation:
 This project is currently in **active development**. Here's what's implemented and what's planned:
 
 ### ✅ Completed Features
+
 - Basic CLI structure with Typer
 - Google Gemini AI integration
 - Field parsing and validation
 - Project scaffolding framework
 
 ### 🔄 In Progress
+
 - CRUD code generation
 - File writing system
 - Database model generation
 - API endpoint creation
 
 ### 📋 Planned Features
+
 - Multiple database support (PostgreSQL, MySQL, SQLite)
 - Authentication system generation
 - Testing framework integration

@@ -19,3 +19,13 @@ dependencies = [
 
 [project.scripts]
 foxie = "foxie_cli.cli:app"
+
+[project.optional-dependencies]
+dev = [
+    "black>=25.9.0",
+]
+
+[tool.setuptools]
+packages = ["foxie_cli"]
+
+

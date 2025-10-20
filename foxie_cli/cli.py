@@ -29,7 +29,8 @@ def fastapi_crud(
     
     parse_fields_str = parse_fields(fields)
     typer.secho("Parsed the fields successfully",fg=typer.colors.BRIGHT_GREEN)
-    typer.echo(f"   -Field:{field.name} Type:{field.type}" for field in parse_fields_str)
+    for field in parse_fields_str:
+        typer.echo(f"   -Field:{field.name} Type:{field.type}")
 
   except ValueError as e:
     typer.secho(f"Error parsing fields: {e}", fg=typer.colors.BRIGHT_RED)
@@ -44,7 +45,32 @@ def fastapi_crud(
     raise typer.Exit(code=1)
   
   try:
-      write_files(generated_code=generated_code)
+      write_files(generated_code=generated_code,base_dir=project_name)
+      
+      typer.secho(f"\n Feature scaffolded successfully in directory : {project_name}! 🎉",fg=typer.colors.BRIGHT_GREEN,bold=True)
+      typer.secho("Next Steps:",fg=typer.colors.BRIGHT_CYAN,bold=True)
+      
+      venv_activate_windows = ".\\.venv\\Scripts\\activate"
+      instructions = f"""
+        1.  Navigate into your new project:
+        {typer.style(f"cd {project_name}", bold=True)}
+
+        2.  Create a virtual environment using uv:
+        {typer.style("uv venv", bold=True)}
+
+        3.  Activate the environment:
+        {typer.style("source .venv/bin/activate", bold=True)} (On Linux/macOS)
+        {typer.style(venv_activate_windows, bold=True)} (On Windows)
+
+        4.  Install all project dependencies from your new pyproject.toml:
+        {typer.style("uv pip install -e .", bold=True)}
+
+        5.  Run your new FastAPI application:
+        {typer.style("uvicorn app.main:app --reload", bold=True)}
+        
+        6. Unfence the generated code files if you haven't already.
+      """
+      typer.echo(instructions)
   
   except Exception as e:
     typer.secho(f"Error writing files: {e}", fg=typer.colors.BRIGHT_RED)
@@ -55,4 +81,3 @@ def fastapi_crud(
 
 if __name__ == "__main__":
     app()
-  

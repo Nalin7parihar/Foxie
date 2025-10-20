@@ -1,0 +1,23 @@
+# This is our company's standard for a FastAPI database session.
+# All generated code must use this 'get_db' dependency.
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from app.core.config import settings # Assume config will exist
+
+# Use appropriate engine settings for production
+engine = create_engine(settings.DATABASE_URL, pool_pre_recycle=3600)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def get_db() -> Session:
+    """
+    FastAPI Dependency to get a database session.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()

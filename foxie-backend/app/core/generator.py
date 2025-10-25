@@ -3,10 +3,10 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 import typer
-from foxie_cli.utils.rag import load_style_guide_snippets
-from foxie_cli.core.prompts import MASTER_PROMPT_TEMPLATE
-from foxie_cli.core.models import GeneratedCode
-from foxie_cli.utils.parser import parse_fields,Field
+from app.utils.rag import load_style_guide_snippets
+from app.core.prompts import MASTER_PROMPT_TEMPLATE
+from app.core.models import GeneratedCode
+from app.utils.parser import parse_fields,Field
 from typing import List
 load_dotenv()
 

@@ -3,17 +3,16 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "foxie"
+name = "foxie-cli"
 version = "0.1.0"
-description = "Add your description here"
+description = "A smart AI-powered code scaffolding CLI."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "dotenv>=0.9.9",
     "google-genai>=1.45.0",
-    "instructor>=1.11.3",
     "pydantic>=2.12.0",
     "python-dotenv>=1.1.1",
+    "requests>=2.32.5",
     "typer>=0.19.2",
 ]
 
@@ -26,6 +25,9 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["foxie_cli"]
+# Use setuptools find to discover packages under src/ (src-layout)
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["foxie_cli*"]
 
 

@@ -1,0 +1,30 @@
+
+services:
+  backend:
+    build: ./foxie-backend # Tells Compose where to find the Dockerfile
+    ports:
+      - "8000:8000" # Exposes the backend's port 8000 to your host machine
+    volumes:
+      - ./foxie-backend/app:/app/app # Mount local code for development
+      - ./foxie-backend/data:/app/data # Mount RAG data
+
+    env_file:
+      - ./foxie-backend/.env
+
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY} # Pass API key from host env or .env file
+
+  cli:
+    build: ./foxie-cli
+    depends_on:
+      - backend # Ensures backend starts before CLI tries to connect (optional but good)
+    
+
+    environment:
+      - FOXIE_BACKEND_URL=${FOXIE_BACKEND_URL:-http://backend:8000} # Service name 'backend' acts as hostname inside Docker network
+    # For interactive CLI use, you might need stdin_open and tty:
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./generated_code:/app
+      # You might need to adjust volume mounts depending on how you run commands

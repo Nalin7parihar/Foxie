@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 import typer
+import os
 from app.utils.rag import load_style_guide_snippets
 from app.core.prompts import MASTER_PROMPT_TEMPLATE
 from app.core.models import GeneratedCode

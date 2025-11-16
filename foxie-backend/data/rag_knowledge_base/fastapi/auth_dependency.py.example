@@ -38,17 +38,42 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     except JWTError:
         raise credentials_exception
     
-    # This is a placeholder for a real database call
-    # In a real app, you would fetch the user from the DB:
-    # user = crud.user.get_by_username(db, username=token_data.username)
+    # Fetch user from database
+    # IMPORTANT: The AI should generate the actual database query based on database_type
+    
+    # SQL VERSION (SQLAlchemy):
+    # from app.database.db_session import get_db
+    # from app.crud.user import get_user_by_username
+    # db = next(get_db())
+    # user = get_user_by_username(db, username=token_data.username)
     # if user is None:
     #     raise credentials_exception
-    # For this example, we'll return a mock user
+    # return user
     
-    # Mock user for example purposes. The AI should assume this dependency
-    # correctly fetches a 'User' model instance.
-    if token_data.username == "testuser":
-        return User(id=1, username="testuser", email="test@example.com", is_active=True)
-
-    raise credentials_exception
+    # MONGODB VERSION (Motor client):
+    # from app.database.db_session_mongodb import get_db
+    # from app.core.config import settings
+    # db = get_db()
+    # user_doc = await db.users.find_one({{"username": token_data.username}})
+    # if not user_doc:
+    #     raise credentials_exception
+    # user = User(**user_doc)
+    # return user
+    
+    # MONGODB VERSION (Beanie ODM - preferred):
+    # from app.models.user import User
+    # user = await User.find_one(User.username == token_data.username)
+    # if not user:
+    #     raise credentials_exception
+    # return user
+    
+    # The AI should choose the appropriate version based on database_type
+    # For now, this shows SQL version as example
+    from app.database.db_session import get_db
+    from app.crud.user import get_user_by_username
+    db = next(get_db())
+    user = get_user_by_username(db, username=token_data.username)
+    if user is None:
+        raise credentials_exception
+    return user
 # --- END: auth_dependency.py.example ---

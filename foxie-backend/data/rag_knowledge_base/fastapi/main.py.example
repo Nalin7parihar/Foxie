@@ -19,15 +19,25 @@ async def lifespan(app: FastAPI):
     """
     # --- Startup ---
     # logger.info(f"Starting up {settings.PROJECT_NAME}...")
-    # Add any async service initializations here (e.g., database connection pool)
     print(f"Starting up {settings.PROJECT_NAME}...")
+    
+    # Database initialization (for MongoDB)
+    # If using MongoDB, initialize Beanie here:
+    # from app.database.db_session_mongodb import init_db
+    # await init_db()
+    
+    # For SQL databases, connection is handled lazily via get_db() dependency
     
     yield
     
     # --- Shutdown ---
     # logger.info(f"Shutting down {settings.PROJECT_NAME}...")
-    # Add any async service cleanup here
     print(f"Shutting down {settings.PROJECT_NAME}...")
+    
+    # Close database connections (for MongoDB)
+    # If using MongoDB, close connections here:
+    # from app.database.db_session_mongodb import close_db
+    # await close_db()
 
 
 def create_app() -> FastAPI:

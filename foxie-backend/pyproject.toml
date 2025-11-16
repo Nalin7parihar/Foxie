@@ -1,16 +1,17 @@
 [project]
 name = "foxie-backend"
-version = "0.1.0"
-description = "FastAPI backend service for the Foxie AI code generator"
+version = "0.2.0"
+description = "FastAPI backend service for the Foxie AI code generator with LangGraph self-correction"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi[all]>=0.120.0",
     "google-genai>=1.45.0",
-    "instructor>=1.11.3",
     "pydantic>=2.12.0",
     "python-dotenv>=1.1.1",
     "typer>=0.19.2",
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0",
 ]
 
 [tool.setuptools]

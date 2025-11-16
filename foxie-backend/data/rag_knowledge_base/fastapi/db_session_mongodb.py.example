@@ -1,0 +1,39 @@
+# --- START: db_session_mongodb.py.example ---
+# This is our standard for a FastAPI MongoDB database session.
+# All generated NoSQL code must use this 'get_db' dependency.
+
+from motor.motor_asyncio import AsyncIOMotorClient
+from beanie import init_beanie
+from app.core.config import settings  # Assume config exists
+
+# MongoDB connection client
+client: AsyncIOMotorClient | None = None
+
+async def init_db():
+    """
+    Initialize MongoDB connection and Beanie.
+    Should be called on application startup.
+    """
+    global client
+    client = AsyncIOMotorClient(settings.DATABASE_URL)
+    
+    # Initialize Beanie with your document models
+    # Example: await init_beanie(database=client[settings.DATABASE_NAME], document_models=[User, Product])
+    # This will be generated based on models
+    
+async def close_db():
+    """Close MongoDB connection."""
+    global client
+    if client:
+        client.close()
+
+def get_db() -> AsyncIOMotorClient:
+    """
+    FastAPI Dependency to get MongoDB database instance.
+    Returns the database instance for direct operations.
+    """
+    if client is None:
+        raise RuntimeError("Database not initialized. Call init_db() on startup.")
+    return client[settings.DATABASE_NAME]
+# --- END: db_session_mongodb.py.example ---
+

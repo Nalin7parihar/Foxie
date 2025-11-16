@@ -1,0 +1,28 @@
+# --- START: base_model_mongodb.py.example ---
+# This is the base for all MongoDB documents using Beanie ODM.
+
+from datetime import datetime
+from beanie import Document
+from pydantic import Field
+from typing import Optional
+
+class BaseDocument(Document):
+    """
+    Base class for all MongoDB documents with automatic timestamps.
+    All models should inherit from this.
+    """
+    
+    # All documents get created_at and updated_at timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
+    
+    class Settings:
+        # Beanie settings
+        use_cache = True
+        validate_on_save = True
+    
+    async def before_update(self):
+        """Update timestamp before saving."""
+        self.updated_at = datetime.utcnow()
+# --- END: base_model_mongodb.py.example ---
+

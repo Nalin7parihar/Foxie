@@ -1,20 +1,15 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional, Dict, Any
 import os
-from dotenv import load_dotenv
 
-# Load environment variables (like GOOGLE_API_KEY) from .env file
-load_dotenv()
-
-# --- IMPORT THE REAL AI LOGIC ---
-# Ensure these files exist in foxie-backend/app/core/ and foxie-backend/app/utils/
+# --- IMPORT CONFIGURATION AND AI LOGIC ---
 try:
+    from app.core.config import config
     from app.core.generator import generate_crud_feature
-    from app.core.models import GeneratedCode, CodeFile
+    from app.core.models import GeneratedCode
 except ImportError as e:
     print(f"ERROR: Failed to import core AI logic. Check your backend folder structure. Details: {e}")
-    # Exit if core logic is missing, as the app cannot function
     import sys
     sys.exit(1)
 
@@ -26,27 +21,37 @@ class ScaffoldRequest(BaseModel):
     project_name: str = Field(..., description="Name of the project.")
     resource: str = Field(..., description="Name of the CRUD resource.")
     fields_str: str = Field(..., description="Comma-separated fields string.")
+    database_type: str = Field(default="sql", description="Database type: 'sql' or 'mongodb'")
+    enable_auth: bool = Field(default=False, description="Enable authentication (User model, auth endpoints)")
+    protect_routes: bool = Field(default=False, description="Protect resource routes with authentication")
+    api_key: Optional[str] = Field(None, description="Google Gemini API key (optional if set in environment)")
+
 
 app = FastAPI(
-    title="Foxie AI Backend",
-    description="Handles the AI code generation logic for the Foxie CLI."
+    title=config.title,
+    description=config.description,
+    version=config.version
 )
 
 @app.post("/scaffold", response_model=GeneratedCode)
 async def scaffold_feature(request: ScaffoldRequest):
     """
-    Receives a scaffolding request, runs the REAL AI logic,
+    Main endpoint: Receives a scaffolding request, runs the AI logic,
     and returns the generated code.
     """
     print(f"Received request to scaffold '{request.resource}' for project '{request.project_name}'...")
 
     try:
         # --- CALL THE REAL AI GENERATOR ---
-        print("Calling AI generation function...")
+        print(f"Calling AI generation function (DB: {request.database_type}, Auth: {request.enable_auth})...")
         generated_code = generate_crud_feature(
             project_name=request.project_name,
             resource=request.resource,
-            fields_str=request.fields_str
+            fields_str=request.fields_str,
+            api_key=request.api_key,
+            database_type=request.database_type,
+            enable_auth=request.enable_auth,
+            protect_routes=request.protect_routes
         )
 
         if not generated_code or not generated_code.files:
@@ -70,6 +75,7 @@ async def scaffold_feature(request: ScaffoldRequest):
             detail=f"An internal error occurred in the AI service: {str(e)}"
         )
 
+
 @app.get("/health")
 def health_check():
     """Simple health check endpoint."""
@@ -78,7 +84,4 @@ def health_check():
 # Optional: Add basic entry point if you ever run this file directly
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))
-    # Allow connections from any host if running in a container, otherwise default to localhost
-    host = os.getenv("HOST", "127.0.0.1")
-    uvicorn.run(app, host=host, port=port)
+    uvicorn.run(app, host=config.host, port=config.port)

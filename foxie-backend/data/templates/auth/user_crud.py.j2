@@ -1,0 +1,122 @@
+from typing import List, Optional
+{% if database_type == "sql" %}
+from sqlalchemy.orm import Session
+from sqlalchemy import select
+{% else %}
+from motor.motor_asyncio import AsyncIOMotorClient
+{% endif %}
+from app.models.user import User
+from app.schemas.user import UserCreate, UserUpdate
+from app.core.security import get_password_hash
+
+
+class CRUDUser:
+{% if database_type == "sql" %}
+    def get(self, db: Session, id: int) -> User | None:
+        stmt = select(User).where(User.id == id)
+        result = db.execute(stmt)
+        return result.scalar_one_or_none()
+    
+    def get_multi(self, db: Session, skip: int = 0, limit: int = 100) -> List[User]:
+        stmt = select(User).offset(skip).limit(limit)
+        result = db.execute(stmt)
+        return list(result.scalars().all())
+    
+    def get_by_username(self, db: Session, username: str) -> User | None:
+        stmt = select(User).where(User.username == username)
+        result = db.execute(stmt)
+        return result.scalar_one_or_none()
+    
+    def get_by_email(self, db: Session, email: str) -> User | None:
+        stmt = select(User).where(User.email == email)
+        result = db.execute(stmt)
+        return result.scalar_one_or_none()
+    
+    def create(self, db: Session, obj_in: UserCreate) -> User:
+        hashed_password = get_password_hash(obj_in.password)
+        db_user = User(
+            username=obj_in.username,
+            email=obj_in.email,
+            hashed_password=hashed_password,
+            is_active=obj_in.is_active,
+            is_superuser=obj_in.is_superuser
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+    
+    def update(self, db: Session, db_obj: User, obj_in: UserUpdate) -> User:
+        update_data = obj_in.model_dump(exclude_unset=True)
+        if "password" in update_data:
+            update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
+        for field, value in update_data.items():
+            setattr(db_obj, field, value)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
+    
+    def remove(self, db: Session, id: int) -> User | None:
+        db_user = self.get(db, id)
+        if db_user:
+            db.delete(db_user)
+            db.commit()
+        return db_user
+{% else %}
+    async def get(self, db: AsyncIOMotorClient, id: str) -> User | None:
+        user_doc = await db.users.find_one({"_id": id})
+        if user_doc:
+            return User(**user_doc)
+        return None
+    
+    async def get_multi(self, db: AsyncIOMotorClient, skip: int = 0, limit: int = 100) -> List[User]:
+        cursor = db.users.find().skip(skip).limit(limit)
+        users = []
+        async for doc in cursor:
+            users.append(User(**doc))
+        return users
+    
+    async def get_by_username(self, db: AsyncIOMotorClient, username: str) -> User | None:
+        user_doc = await db.users.find_one({"username": username})
+        if user_doc:
+            return User(**user_doc)
+        return None
+    
+    async def get_by_email(self, db: AsyncIOMotorClient, email: str) -> User | None:
+        user_doc = await db.users.find_one({"email": email})
+        if user_doc:
+            return User(**user_doc)
+        return None
+    
+    async def create(self, db: AsyncIOMotorClient, obj_in: UserCreate) -> User:
+        hashed_password = get_password_hash(obj_in.password)
+        user_dict = {
+            "username": obj_in.username,
+            "email": obj_in.email,
+            "hashed_password": hashed_password,
+            "is_active": obj_in.is_active,
+            "is_superuser": obj_in.is_superuser
+        }
+        result = await db.users.insert_one(user_dict)
+        user_dict["_id"] = result.inserted_id
+        return User(**user_dict)
+    
+    async def update(self, db: AsyncIOMotorClient, db_obj: User, obj_in: UserUpdate) -> User:
+        update_data = obj_in.model_dump(exclude_unset=True)
+        if "password" in update_data:
+            update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
+        await db.users.update_one({"_id": db_obj.id}, {"$set": update_data})
+        updated_doc = await db.users.find_one({"_id": db_obj.id})
+        return User(**updated_doc)
+    
+    async def remove(self, db: AsyncIOMotorClient, id: str) -> User | None:
+        user_doc = await db.users.find_one({"_id": id})
+        if user_doc:
+            await db.users.delete_one({"_id": id})
+            return User(**user_doc)
+        return None
+{% endif %}
+
+
+user = CRUDUser()
+

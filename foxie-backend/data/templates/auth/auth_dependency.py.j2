@@ -1,0 +1,64 @@
+# This is our standard for handling user authentication.
+# All protected endpoints MUST use this 'get_current_user' dependency.
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from pydantic import BaseModel
+
+from app.core.config import settings
+from app.models.user import User
+
+# This is our main security scheme
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+
+class TokenData(BaseModel):
+    username: str | None = None
+
+def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+    """
+    Dependency to get the current user from a JWT token.
+    This is the standard way to protect an endpoint.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+    
+    # Fetch user from database
+{% if database_type == "sql" %}
+    from app.database.db_session import get_db
+    from app.crud.user import user as crud_user
+    db = next(get_db())
+    user = crud_user.get_by_username(db, username=token_data.username)
+    if user is None:
+        raise credentials_exception
+    return user
+{% else %}
+    # MongoDB version - Note: This requires async dependency injection
+    # For now, using a synchronous pattern that works with Motor's sync API
+    # Full async support would require making get_current_user async and using Depends with async dependencies
+    from app.database.db_session_mongodb import get_db
+    from app.crud.user import user as crud_user
+    import asyncio
+    db = get_db()
+    # Using asyncio.run for now - in production, use proper async dependency injection
+    loop = asyncio.get_event_loop()
+    user = loop.run_until_complete(crud_user.get_by_username(db, username=token_data.username))
+    if user is None:
+        raise credentials_exception
+    return user
+{% endif %}
+

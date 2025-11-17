@@ -18,6 +18,9 @@ from .core.models import GeneratedCode, CodeFile
 # Define the URL of your backend service. Default is localhost.
 BACKEND_URL = os.getenv("FOXIE_BACKEND_URL", "http://127.0.0.1:8000")
 
+# Scaffold timeout in seconds
+SCAFFOLD_TIMEOUT = int(os.getenv("FOXIE_SCAFFOLD_TIMEOUT", "300"))  # Default 5 minutes
+
 console = Console()
 app = typer.Typer(
     name="foxie",
@@ -155,20 +158,12 @@ def interactive_scaffold():
         default=False
     )
     
-    protect_routes = False
-    if enable_auth:
-        protect_routes = Confirm.ask(
-            "[yellow]Protect resource routes with authentication?[/yellow]",
-            default=False
-        )
-    
     return {
         "project_name": project_name,
         "resource": resource,
         "fields": fields,
         "database_type": database_type,
         "enable_auth": enable_auth,
-        "protect_routes": protect_routes,
         "mode": "1",  # Always use Standard mode
         "api_key": api_key
     }
@@ -199,10 +194,6 @@ def scaffold_fastapi_crud(
         "--enable-auth",
         help="Enable authentication (generates User model, auth endpoints, JWT)"
     )] = False,
-    protect_routes: Annotated[bool, typer.Option(
-        "--protect-routes",
-        help="Protect resource routes with authentication (requires --enable-auth)"
-    )] = False,
 ):
     """
     Sends a request to the Foxie backend to generate code.
@@ -216,7 +207,6 @@ def scaffold_fastapi_crud(
         fields = params["fields"]
         database_type = params["database_type"]
         enable_auth = params["enable_auth"]
-        protect_routes = params["protect_routes"]
         api_key = params["api_key"]
     else:
         # Validate required parameters
@@ -237,11 +227,6 @@ def scaffold_fastapi_crud(
         if database_type not in ["sql", "mongodb"]:
             console.print("[red]❌ Error: --database-type must be 'sql' or 'mongodb'[/red]")
             raise typer.Exit(code=1)
-        
-        # Validate protect_routes requires enable_auth
-        if protect_routes and not enable_auth:
-            console.print("[yellow]⚠️  Warning: --protect-routes requires --enable-auth. Ignoring --protect-routes.[/yellow]")
-            protect_routes = False
     
     # Display summary
     console.print(f"\n[cyan]✨ Scaffolding Configuration:[/cyan]")
@@ -250,8 +235,6 @@ def scaffold_fastapi_crud(
     console.print(f"  Fields: [bold]{fields}[/bold]")
     console.print(f"  Database: [bold]{database_type.upper()}[/bold]")
     console.print(f"  Authentication: [bold]{'✅ Enabled' if enable_auth else '❌ Disabled'}[/bold]")
-    if enable_auth:
-        console.print(f"  Protected Routes: [bold]{'✅ Yes' if protect_routes else '⚠️  No'}[/bold]")
     
     # --- Prepare API Request ---
     request_data = {
@@ -260,7 +243,6 @@ def scaffold_fastapi_crud(
         "fields_str": fields,
         "database_type": database_type,
         "enable_auth": enable_auth,
-        "protect_routes": protect_routes,
         "api_key": api_key
     }
     scaffold_endpoint = f"{BACKEND_URL}/scaffold"
@@ -273,7 +255,7 @@ def scaffold_fastapi_crud(
         
         # Use a spinner while waiting for the backend
         with console.status("[bold green]🤖 AI is generating your code...", spinner="dots") as status:
-            response = requests.post(scaffold_endpoint, json=request_data, timeout=60) # 1 minute timeout
+            response = requests.post(scaffold_endpoint, json=request_data, timeout=SCAFFOLD_TIMEOUT) # 3 minutes timeout
             response.raise_for_status() # Check for HTTP errors
             response_data = response.json()
             
@@ -290,8 +272,10 @@ def scaffold_fastapi_crud(
         console.print("[dim]    Run: docker-compose up -d backend[/dim]")
         raise typer.Exit(code=1)
     except requests.exceptions.Timeout:
-        console.print(f"\n[red]❌ Error: Request to backend timed out.[/red]")
-        console.print("[yellow]    The AI generation is taking too long.[/yellow]")
+        console.print(f"\n[red]❌ Error: Request to backend timed out after {SCAFFOLD_TIMEOUT} seconds.[/red]")
+        console.print("[yellow]    The AI generation is taking longer than expected.[/yellow]")
+        console.print("[dim]    Tip: You can increase the timeout by setting FOXIE_SCAFFOLD_TIMEOUT environment variable[/dim]")
+        console.print(f"[dim]    Current timeout: {SCAFFOLD_TIMEOUT}s. Try: export FOXIE_SCAFFOLD_TIMEOUT=300[/dim]")
         raise typer.Exit(code=1)
     except requests.exceptions.HTTPError as e:
         error_detail = e.response.text # Get error detail from backend if available

@@ -23,7 +23,6 @@ class ScaffoldRequest(BaseModel):
     fields_str: str = Field(..., description="Comma-separated fields string.")
     database_type: str = Field(default="sql", description="Database type: 'sql' or 'mongodb'")
     enable_auth: bool = Field(default=False, description="Enable authentication (User model, auth endpoints)")
-    protect_routes: bool = Field(default=False, description="Protect resource routes with authentication")
     api_key: Optional[str] = Field(None, description="Google Gemini API key (optional if set in environment)")
 
 
@@ -50,8 +49,7 @@ async def scaffold_feature(request: ScaffoldRequest):
             fields_str=request.fields_str,
             api_key=request.api_key,
             database_type=request.database_type,
-            enable_auth=request.enable_auth,
-            protect_routes=request.protect_routes
+            enable_auth=request.enable_auth
         )
 
         if not generated_code or not generated_code.files:

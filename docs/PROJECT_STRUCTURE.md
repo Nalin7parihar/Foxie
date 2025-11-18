@@ -84,42 +84,23 @@ This directory contains the heart of the AI generation system.
 
 ##### `app/core/generator.py`
 
-- **Purpose**: Standard mode code generator (one-shot generation)
+- **Purpose**: Standard mode code generator (one-shot generation with hybrid approach)
 - **Key Features**:
   - `generate_crud_feature()` - Main function for standard generation
-  - Uses Google Gemini API with structured JSON output
+  - Uses Google Gemini API with structured JSON output for core CRUD files
+  - **Template-Based Auth**: Uses Jinja2 templates for authentication files (no LLM calls)
+  - **Two-Step Process**: When auth enabled, generates core CRUD first, then adds static auth files
+  - `_generate_static_auth_files()` - Generates auth files from templates
+  - `_generate_core_crud_files()` - Generates core CRUD files via LLM
+  - `_merge_auth_into_router_and_main()` - Merges auth routes into router and main files
   - Loads RAG style guide snippets
   - Parses field definitions from input string
   - Returns complete `GeneratedCode` object with all files
-  - Fast but may have quality issues
-
-##### `app/core/react_agent.py`
-
-- **Purpose**: ReAct Agent implementation using LangGraph
-- **Key Features**:
-  - Implements autonomous code generation with Reason-Act-Observe pattern
-  - Uses LangGraph `StateGraph` to manage agent workflow
-  - **Graph Nodes**:
-    - `plan_files` - Determines which files need to be generated
-    - `reason` - Agent thinks about next action
-    - `generate` - Generates a file with validation
-    - `validate` - Validates generated code
-    - `fix` - Fixes errors found during validation
-  - **State Management**:
-    - Tracks planned files, generated files, validated files
-    - Maintains reasoning history (thoughts, actions, observations)
-    - Controls workflow progression
-  - **Process Flow**:
-    1. Plan file structure
-    2. Reason about next action
-    3. Generate file (with auto-validation)
-    4. If errors found, fix and re-validate
-    5. Continue until all files are generated and validated
-  - Slower but produces higher quality, validated code
+  - Fast and cost-effective (reduces API calls for auth)
 
 ##### `app/core/file_generator.py`
 
-- **Purpose**: Individual file generation logic for ReAct Agent
+- **Purpose**: Individual file generation logic (available for future use)
 - **Key Features**:
   - `FileGenerator` class with specialized methods for each file type:
     - `generate_config_file()` - App configuration
@@ -181,12 +162,12 @@ Supporting utilities for the backend service.
     - `validate_sqlalchemy_patterns()` - SQLAlchemy 2.0+ syntax
       - Ensures `Mapped[]` type hints
       - Validates `mapped_column()` usage
-  - Used by ReAct Agent for automatic code validation
+  - Available for future code validation features
   - Returns structured `ValidationResult` objects with issues and severity levels
 
-### `foxie-backend/data/` - RAG Knowledge Base
+### `foxie-backend/data/` - RAG Knowledge Base & Templates
 
-**Purpose**: Stores example code files used for Retrieval-Augmented Generation.
+**Purpose**: Stores example code files for RAG and Jinja2 templates for static generation.
 
 #### `data/rag_knowledge_base/fastapi/`
 
@@ -198,6 +179,18 @@ Supporting utilities for the backend service.
   - `db_session.py.example` - Database session setup pattern
   - `main.py.example` - FastAPI app entry point pattern
 - **Usage**: These files are loaded and injected into AI prompts to guide code generation towards best practices
+
+#### `data/templates/auth/`
+
+- **Purpose**: Jinja2 templates for generating authentication files statically
+- **Files**:
+  - `security.py.j2` - Password hashing and JWT utilities template
+  - `user_model.py.j2` - User model template (adapts to SQL/MongoDB)
+  - `user_schema.py.j2` - User Pydantic schemas template
+  - `user_crud.py.j2` - User CRUD operations template
+  - `auth_endpoints.py.j2` - Authentication endpoints template
+  - `auth_dependency.py.j2` - JWT token validation dependency template
+- **Usage**: These templates are rendered with database type context to generate auth files without LLM calls, reducing costs and improving consistency
 
 ### `foxie-backend/Dockerfile`
 
@@ -274,6 +267,22 @@ Supporting utilities for the backend service.
   - Handles file system errors gracefully
   - Provides user feedback for each file created
 
+#### `src/foxie_cli/utils/template_generator.py`
+
+- **Purpose**: Static template generation for configuration files
+- **Key Features**:
+  - `generate_pyproject_toml()` - Generates `pyproject.toml` with dependencies based on:
+    - Database type (SQL or MongoDB)
+    - Authentication requirements
+    - Project name
+  - `generate_env_file()` - Generates `.env` file with:
+    - Database URL (defaults based on database type)
+    - Security settings (if auth enabled)
+    - CORS configuration
+    - Environment-specific defaults
+  - **Static Generation**: These files are generated from templates (not AI), ensuring consistency and reliability
+  - Automatically adapts to user's selections (database type, auth enabled)
+
 ### `foxie-cli/generated_code/`
 
 - **Purpose**: Default output directory for generated projects (mounted as volume in Docker Compose)
@@ -308,35 +317,25 @@ Supporting utilities for the backend service.
 
 ## 🔄 Data Flow
 
-### Standard Mode Flow:
+### Generation Flow:
 
 ```
 User → CLI (interactive/args)
     → Backend /scaffold endpoint
-    → generator.py (one-shot generation)
-    → Google Gemini API
+    → generator.py (hybrid generation)
+        → If auth enabled:
+            → Step 1: Generate core CRUD via AI (Google Gemini API)
+            → Step 2: Generate auth files via Jinja2 templates
+            → Merge auth routes into router and main
+        → If no auth:
+            → Generate core CRUD via AI (Google Gemini API)
     → GeneratedCode response
     → CLI receives response
-    → file_writer.py (write to disk)
-    → User sees generated files
-```
-
-### ReAct Agent Mode Flow:
-
-```
-User → CLI (--agentic flag)
-    → Backend /scaffold/react endpoint
-    → react_agent.py (LangGraph workflow)
-        → plan_files (determine file structure)
-        → reason (think about next action)
-        → generate (create file using file_generator.py)
-        → validate (check code quality using validators.py)
-        → fix (if errors found, regenerate)
-        → repeat until complete
-    → GeneratedCode + React Summary response
-    → CLI receives response
-    → file_writer.py (write to disk)
-    → User sees generated files + agent summary
+    → file_writer.py (write AI-generated code files to disk)
+    → template_generator.py (generate static config files)
+        → Generate pyproject.toml (dependencies based on selections)
+        → Generate .env (environment variables with defaults)
+    → User sees generated files + config files
 ```
 
 ---
@@ -344,10 +343,10 @@ User → CLI (--agentic flag)
 ## 🎯 Key Design Decisions
 
 1. **Microservice Architecture**: Separates AI-heavy backend from lightweight CLI for better scalability
-2. **LangGraph for Agent Orchestration**: Provides structured state management and workflow control
+2. **Hybrid Generation**: Combines AI generation for flexibility with templates for consistency and speed
 3. **RAG for Quality**: Example files guide AI toward best practices
-4. **Automatic Validation**: ReAct Agent validates code immediately after generation
-5. **Two Generation Modes**: Balance between speed (Standard) and quality (ReAct Agent)
+4. **Template-Based Auth**: Jinja2 templates ensure consistent, reliable authentication code
+5. **Cost-Effective**: Templates reduce API calls by ~40% when auth is enabled
 6. **Rich CLI UX**: Interactive mode with beautiful terminal output improves developer experience
 7. **Flexible API Key Management**: Multiple sources with priority order for convenience
 8. **Docker Compose Orchestration**: Easy deployment and development setup
@@ -365,7 +364,7 @@ User → CLI (--agentic flag)
 
 ## 🔍 Finding Specific Functionality
 
-- **AI Code Generation**: `foxie-backend/app/core/generator.py` (Standard) or `react_agent.py` (Agent)
+- **AI Code Generation**: `foxie-backend/app/core/generator.py`
 - **File Generation Logic**: `foxie-backend/app/core/file_generator.py`
 - **Code Validation**: `foxie-backend/app/utils/validators.py`
 - **RAG Examples**: `foxie-backend/data/rag_knowledge_base/fastapi/`

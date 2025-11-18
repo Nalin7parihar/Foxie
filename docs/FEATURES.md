@@ -9,8 +9,9 @@ This document describes the features and capabilities of the Foxie Platform.
 ### 1. AI-Powered Code Generation
 
 - **Standard Mode**: Fast, one-shot generation using Google Gemini API
-- **Single API Call**: Efficient and cost-effective
+- **Hybrid Generation**: Combines LLM generation for core CRUD with template-based generation for auth
 - **RAG Integration**: Uses Retrieval-Augmented Generation with style guide examples
+- **Template System**: Jinja2 templates for authentication files (faster, more reliable, reduces API costs)
 - **Production-Ready Code**: Generates complete CRUD features with best practices
 
 ### 2. Database Support
@@ -31,12 +32,12 @@ This document describes the features and capabilities of the Foxie Platform.
 
 ### 3. Authentication System
 
-When enabled, generates a complete authentication system:
+When enabled, generates a complete authentication system using **template-based generation** for efficiency and consistency.
 
 #### Generated Files
 
 - `app/core/security.py` - Password hashing (bcrypt) and JWT utilities
-- `app/models/user.py` - User model with authentication fields
+- `app/models/user.py` - User model with authentication fields (adapts to SQL/MongoDB)
 - `app/schemas/user.py` - User schemas (UserCreate, UserResponse, Login, Token)
 - `app/crud/user.py` - User CRUD with password hashing
 - `app/api/endpoints/auth.py` - Auth endpoints
@@ -47,11 +48,14 @@ When enabled, generates a complete authentication system:
 
 #### Features
 
+- **Template-Based Generation**: Auth files are generated from Jinja2 templates (faster, more reliable, cost-effective)
+- **Database-Aware Templates**: Templates automatically adapt to SQL or MongoDB based on your selection
 - **Password Hashing**: Uses bcrypt via passlib
 - **JWT Tokens**: Secure token generation and validation
 - **Protected Routes**: Optional route protection for resource endpoints
 - **User Management**: Complete user CRUD operations
 - **Database Agnostic**: Works with both SQL and MongoDB
+- **Two-Step Generation**: Core CRUD files generated first, then auth files added (reduces LLM API calls)
 
 ### 4. Route Protection
 
@@ -281,7 +285,13 @@ async def create_product(
 
 ## 🚀 Next Steps After Generation
 
-1. **Setup Dependencies**
+1. **Navigate to Project**
+
+   ```bash
+   cd your-project-name
+   ```
+
+2. **Setup Dependencies**
 
    ```bash
    uv venv
@@ -289,19 +299,23 @@ async def create_product(
    uv pip install -e .
    ```
 
-2. **Configure Database**
+   > 💡 **Note**: `pyproject.toml` is automatically generated with all required dependencies based on your database type and auth settings.
 
-   - Update `DATABASE_URL` in `.env` file
-   - For SQL: `sqlite:///./app.db` or PostgreSQL/MySQL URL
-   - For MongoDB: `mongodb://localhost:27017`
+3. **Configure Environment**
 
-3. **Run the Application**
+   - The `.env` file is automatically generated with default values
+   - Update `DATABASE_URL` if needed:
+     - For SQL: `sqlite:///./app.db` (default) or PostgreSQL/MySQL URL
+     - For MongoDB: `mongodb://localhost:27017` (default)
+   - If auth is enabled, update `SECRET_KEY` for production use
+
+4. **Run the Application**
 
    ```bash
    uvicorn app.main:app --reload
    ```
 
-4. **Test the API**
+5. **Test the API**
    - Open `http://localhost:8000/docs` for interactive API documentation
    - If auth enabled: Register a user at `/api/v1/auth/register`
    - Login at `/api/v1/auth/login` to get JWT token

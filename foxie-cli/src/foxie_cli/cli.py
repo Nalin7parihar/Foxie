@@ -11,6 +11,7 @@ from rich.prompt import Prompt, Confirm
 
 # Assuming your file writer utility is here
 from .utils.file_writer import write_files
+from .utils.template_generator import generate_pyproject_toml, generate_env_file
 # Assuming your Pydantic models for the response are here
 from .core.models import GeneratedCode, CodeFile
 
@@ -24,7 +25,7 @@ SCAFFOLD_TIMEOUT = int(os.getenv("FOXIE_SCAFFOLD_TIMEOUT", "300"))  # Default 5 
 console = Console()
 app = typer.Typer(
     name="foxie",
-    help="🦊 A smart AI-powered code scaffolding CLI with Agentic Self-Correction"
+    help="🦊 A smart AI-powered code scaffolding CLI for FastAPI"
 )
 
 scaffold_app = typer.Typer(
@@ -294,79 +295,59 @@ def scaffold_fastapi_crud(
     try:
         write_files(generated_code, base_dir=project_name)
         
+        # Generate static template files (pyproject.toml and .env)
+        console.print("\n[bold cyan]📝 Generating configuration files...[/bold cyan]")
+        
+        pyproject_path = os.path.join(project_name, "pyproject.toml")
+        generate_pyproject_toml(
+            project_name=project_name,
+            database_type=database_type,
+            enable_auth=enable_auth,
+            output_path=pyproject_path
+        )
+        console.print(f"  ✅ Created: {pyproject_path}")
+        
+        env_path = os.path.join(project_name, ".env")
+        generate_env_file(
+            database_type=database_type,
+            output_path=env_path
+        )
+        console.print(f"  ✅ Created: {env_path}")
+        
         console.print(f"\n[bold bright_green]🎉 Successfully scaffolded project '{project_name}'![/bold bright_green]")
         
-        # Show file count
-        console.print(f"[green]📄 Generated {len(generated_code.files)} files[/green]")
+        # Show file count (including the 2 template files)
+        total_files = len(generated_code.files) + 2
+        console.print(f"[green]📄 Generated {total_files} files ({len(generated_code.files)} code files + 2 config files)[/green]")
         
         # --- Setup Instructions ---
         console.print("\n[bold cyan]📋 Next Steps:[/bold cyan]")
-
-        # Build dependencies based on database type and auth
-        base_deps = [
-            "fastapi",
-            "uvicorn[standard]",
-            "pydantic",
-            "pydantic-settings",
-        ]
         
-        if database_type == "sql":
-            db_deps = [
-                "sqlalchemy",
-            ]
-        else:  # mongodb
-            db_deps = [
-                "motor",
-                "beanie",
-            ]
-        
-        auth_deps = []
-        if enable_auth:
-            auth_deps = [
-                "python-jose[cryptography]",
-                "passlib[bcrypt]",
-                "python-multipart",
-            ]
-        
-        all_deps = base_deps + db_deps + auth_deps
-        deps_str = ",\n    ".join([f'"{dep}"' for dep in all_deps])
-        
-        # Define the pyproject.toml content separately
-        pyproject_content = f'''[project]
-name = "{project_name}"
-version = "0.1.0"
-requires-python = ">=3.9"
-dependencies = [
-    {deps_str},
-]
-
-[tool.setuptools]
-packages = ["app"]'''
-
         console.print(f"\n[bold]1. Navigate to your project:[/bold]")
         console.print(f"   [cyan]cd {project_name}[/cyan]")
         
-        console.print(f"\n[bold]2. Create pyproject.toml with this content:[/bold]")
-        console.print(Panel(pyproject_content, border_style="dim"))
-        
-        console.print(f"\n[bold]3. Setup environment:[/bold]")
+        console.print(f"\n[bold]2. Setup environment:[/bold]")
         console.print(f"   [cyan]uv venv[/cyan]")
         console.print(f"   [cyan].venv\\Scripts\\activate[/cyan]  [dim](Windows)[/dim]")
         console.print(f"   [cyan]source .venv/bin/activate[/cyan]  [dim](Linux/macOS)[/dim]")
         
-        console.print(f"\n[bold]4. Install dependencies:[/bold]")
+        console.print(f"\n[bold]3. Install dependencies:[/bold]")
         console.print(f"   [cyan]uv pip install -e .[/cyan]")
         
         # Database-specific setup instructions
         if database_type == "sql":
-            console.print(f"\n[bold]5. Setup database:[/bold]")
-            console.print(f"   [cyan]# For SQLite (default): No setup needed[/cyan]")
-            console.print(f"   [cyan]# For PostgreSQL: Install and configure PostgreSQL[/cyan]")
-            console.print(f"   [cyan]# Update DATABASE_URL in .env file[/cyan]")
+            console.print(f"\n[bold]4. Configure database (optional):[/bold]")
+            console.print(f"   [cyan]# SQLite is configured by default in .env[/cyan]")
+            console.print(f"   [cyan]# For PostgreSQL: Update DATABASE_URL in .env file[/cyan]")
         else:  # mongodb
-            console.print(f"\n[bold]5. Setup MongoDB:[/bold]")
-            console.print(f"   [cyan]# Install MongoDB locally or use MongoDB Atlas[/cyan]")
-            console.print(f"   [cyan]# Update DATABASE_URL in .env file (mongodb://localhost:27017)[/cyan]")
+            console.print(f"\n[bold]4. Configure database:[/bold]")
+            console.print(f"   [cyan]# Update DATABASE_URL in .env file if needed[/cyan]")
+            console.print(f"   [cyan]# Default: mongodb://localhost:27017[/cyan]")
+        
+        if enable_auth:
+            console.print(f"\n[bold]5. Configure authentication:[/bold]")
+            console.print(f"   [cyan]# Update SECRET_KEY in .env file for production[/cyan]")
+            console.print(f"   [cyan]# Default key is provided for development only[/cyan]")
         
         console.print(f"\n[bold]6. Run your FastAPI app:[/bold]")
         console.print(f"   [cyan]uvicorn app.main:app --reload[/cyan]")

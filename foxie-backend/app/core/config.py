@@ -15,7 +15,7 @@ class AppConfig(BaseModel):
     
     # API Configuration
     title: str = "Foxie AI Backend - Phase 2"
-    description: str = "AI code generation with LangGraph self-correction for FastAPI projects"
+    description: str = "AI code generation for FastAPI projects"
     version: str = "2.0.0"
     
     # Server Configuration

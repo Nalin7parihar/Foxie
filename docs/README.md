@@ -14,6 +14,26 @@ Comprehensive guide explaining:
 - Data flow between components
 - Development workflow
 
+### [Features](./FEATURES.md)
+
+Detailed feature documentation:
+
+- Core features and capabilities
+- Database support (SQL & MongoDB)
+- Authentication system
+- Configuration options
+- Usage examples
+
+### [Next Steps](./NEXT_STEPS.md)
+
+Future plans and roadmap:
+
+- Short-term improvements (1-2 months)
+- Medium-term enhancements (3-6 months)
+- Long-term vision (6+ months)
+- Technical debt and improvements
+- Implementation phases
+
 ## 🎯 Quick Navigation
 
 ### For New Developers

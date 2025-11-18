@@ -1,6 +1,7 @@
 """
-File generation logic for ReAct Agent.
+File generation logic for individual file generation.
 Generates each file type with appropriate prompts and RAG integration.
+Note: Currently not used in standard mode, but available for future use.
 """
 from typing import Dict, List, Optional
 from google import genai

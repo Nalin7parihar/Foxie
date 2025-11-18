@@ -34,7 +34,8 @@ def _generate_static_auth_files(database_type: str) -> List[CodeFile]:
     env = Environment(
         loader=FileSystemLoader(template_dir),
         trim_blocks=True,
-        lstrip_blocks=True
+        lstrip_blocks=True,
+        keep_trailing_newline=True
     )
     
     # Template context

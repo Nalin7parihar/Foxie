@@ -1,6 +1,6 @@
 # 🧠 Foxie Backend
 
-FastAPI backend service for the Foxie AI code generator with LangGraph self-correction.
+FastAPI backend service for the Foxie AI code generator.
 
 This is the AI-powered code generation engine that handles all code generation requests.
 
@@ -28,8 +28,7 @@ GOOGLE_API_KEY=your-api-key
 
 ## API Endpoints
 
-- `POST /scaffold` - Standard mode (one-shot generation)
-- `POST /scaffold/react` - ReAct Agent mode (autonomous generation with validation)
+- `POST /scaffold` - Hybrid generation (AI for core CRUD + templates for auth)
 - `GET /health` - Health check
 
 ## Documentation

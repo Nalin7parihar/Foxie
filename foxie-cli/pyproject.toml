@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "foxie-cli"
-version = "0.1.0"
+version = "0.1.2"
 description = "A smart AI-powered code scaffolding CLI for FastAPI applications. Generate production-ready CRUD features with authentication using Google Gemini AI."
 readme = "README.md"
 requires-python = ">=3.11"

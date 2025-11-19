@@ -36,8 +36,8 @@ if foxie_config.exists():
     load_dotenv(foxie_config)  # Also load ~/.config/foxie/config.env
 
 # --- Configuration ---
-# Define the URL of your backend service. Default is localhost.
-BACKEND_URL = os.getenv("FOXIE_BACKEND_URL", "http://127.0.0.1:8000")
+# Define the URL of your backend service. Default is the deployed Render backend.
+BACKEND_URL = os.getenv("FOXIE_BACKEND_URL", "https://foxie-wsj6.onrender.com")
 
 # Scaffold timeout in seconds
 SCAFFOLD_TIMEOUT = int(os.getenv("FOXIE_SCAFFOLD_TIMEOUT", "300"))  # Default 5 minutes
@@ -276,7 +276,6 @@ def scaffold_fastapi_crud(
     }
     scaffold_endpoint = f"{BACKEND_URL}/scaffold"
     typer.echo(f"\n⚡ Generating code...")
-    typer.echo(f"   Contacting backend at {scaffold_endpoint}...")
 
     # --- Call Backend API ---
     generated_code: GeneratedCode = None
@@ -299,9 +298,9 @@ def scaffold_fastapi_crud(
         typer.secho("\n✅ Received generated code from backend!", fg=typer.colors.GREEN)
 
     except requests.exceptions.ConnectionError:
-        console.print(f"\n[red]❌ Error: Could not connect to backend at {BACKEND_URL}.[/red]")
-        console.print("[yellow]    Please ensure the backend server (`foxie-backend`) is running.[/yellow]")
-        console.print("[dim]    Run: docker-compose up -d backend[/dim]")
+        console.print(f"\n[red]❌ Error: Could not connect to backend service.[/red]")
+        console.print("[yellow]    Please check your internet connection or backend configuration.[/yellow]")
+        console.print("[dim]    For local development, ensure the backend is running and FOXIE_BACKEND_URL is set correctly.[/dim]")
         raise typer.Exit(code=1)
     except requests.exceptions.Timeout:
         console.print(f"\n[red]❌ Error: Request to backend timed out after {SCAFFOLD_TIMEOUT} seconds.[/red]")

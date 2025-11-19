@@ -75,7 +75,8 @@ The **command-line interface (CLI)** provides the developer-facing interaction.
 
 Before getting started, ensure you have:
 
-- 🐳 **Docker & Docker Compose** installed and running → [Install Docker](https://docs.docker.com/get-docker/)
+- 🐍 **Python 3.11+** installed
+- 🌐 **Backend deployed** (or running locally) - See [Backend Setup](#-backend-setup) below
 - 🔑 A **Google Gemini API key** → [Get your API key](https://makersuite.google.com/app/apikey)
 
 ---
@@ -84,160 +85,100 @@ Before getting started, ensure you have:
 
 Foxie needs a Google Gemini API key to function. You have **multiple options** to provide it:
 
-### Option 1: Interactive Setup (Recommended for first-time users)
-
-When you run Foxie for the first time, it will automatically prompt you for your API key:
-
-```bash
-foxie scaffold fastapi-crud
-```
-
-The CLI will:
-
-- Prompt you to enter your API key (hidden input for security)
-- Offer to save it to `~/.foxie/.env` for future use
-- Remember it for all future Foxie commands
-
-### Option 2: Pre-configure with CLI Command
-
-Set up your API key before using Foxie:
+### Option 1: Interactive Configuration (Recommended)
 
 ```bash
 foxie config
 ```
 
-This saves your key to `~/.foxie/.env` so you never have to enter it again.
+This saves your key to `~/.config/foxie/config.env` for future use.
 
-### Option 3: Environment Variable
+### Option 2: Environment Variable
 
 Set the `GOOGLE_API_KEY` environment variable:
 
 **Windows (PowerShell):**
 
 ```powershell
-$env:GOOGLE_API_KEY="AIzaYourActualApiKeyGoesHere"
+$env:GOOGLE_API_KEY="your-api-key-here"
 ```
 
 **Linux/macOS:**
 
 ```bash
-export GOOGLE_API_KEY="AIzaYourActualApiKeyGoesHere"
+export GOOGLE_API_KEY="your-api-key-here"
 ```
 
-### Option 4: Project .env File
+### Option 3: Project .env File
 
 Create a `.env` file in your project directory:
 
 ```bash
 # .env
-GOOGLE_API_KEY=AIzaYourActualApiKeyGoesHere
+GOOGLE_API_KEY=your-api-key-here
 ```
 
-### Option 5: Global Config File
+### Option 4: Global Config File
 
-Create `~/.foxie/.env` manually:
+Create `~/.config/foxie/config.env` manually (follows XDG Base Directory specification):
 
 **Windows:**
 
 ```powershell
-New-Item -Path "$HOME\.foxie" -ItemType Directory -Force
-Set-Content -Path "$HOME\.foxie\.env" -Value "GOOGLE_API_KEY=AIzaYourActualApiKeyGoesHere"
+New-Item -Path "$HOME\.config\foxie" -ItemType Directory -Force
+Set-Content -Path "$HOME\.config\foxie\config.env" -Value "GOOGLE_API_KEY=your-api-key-here"
 ```
 
 **Linux/macOS:**
 
 ```bash
-mkdir -p ~/.foxie
-echo "GOOGLE_API_KEY=AIzaYourActualApiKeyGoesHere" > ~/.foxie/.env
+mkdir -p ~/.config/foxie
+echo "GOOGLE_API_KEY=your-api-key-here" > ~/.config/foxie/config.env
 ```
 
 ### Priority Order
 
 Foxie checks for your API key in this order (highest priority first):
 
-1. ✅ Explicitly passed to CLI/API
-2. ✅ `GOOGLE_API_KEY` environment variable
-3. ✅ `.env` file in current directory
-4. ✅ `~/.foxie/.env` global config file
-5. ❌ Prompts you to enter it
+1. ✅ `GOOGLE_API_KEY` environment variable
+2. ✅ `.env` file in current directory
+3. ✅ `~/.config/foxie/config.env` file (standard config location)
+4. ❌ Interactive prompt (if none found)
 
 ---
 
-## 🚀 Setup Guide
+## 🖥️ Backend Setup
 
-### 1. Clone the Repository
+The Foxie backend can be run in two ways:
+
+### Option 1: Deploy on Render (Recommended for Production)
+
+1. Deploy the `foxie-backend` service on [Render](https://render.com)
+2. Set environment variables (if needed):
+   - `HOST` (default: `0.0.0.0`)
+   - `PORT` (default: `8000`)
+   - `GEMINI_MODEL` (default: `gemini-2.5-flash`)
+3. Configure your CLI to use the deployed backend URL (see above)
+
+**Note:** The backend doesn't require `GOOGLE_API_KEY` - users provide their own keys via the CLI.
+
+### Option 2: Run Locally with Docker
+
+For local development:
 
 ```bash
+# Clone the repository
 git clone https://github.com/Nalin7parihar/Foxie.git
 cd Foxie
-```
 
-### 2. Configure Your API Key
-
-Choose one of the options above to set your Google Gemini API key.
-
-````
-
-⚠️ **Important:** This key will be securely passed into the backend container via Docker Compose.
-
-### 3. Build Docker Images
-
-```bash
-docker-compose build
-````
-
-### 4. Run the Backend Service
-
-Start the backend in detached mode:
-
-```bash
+# Start the backend
 docker-compose up -d backend
+
+# Set the backend URL for local development
+export FOXIE_BACKEND_URL="http://127.0.0.1:8000"
 ```
 
-Check logs if needed:
-
-```bash
-docker-compose logs -f backend
-```
-
-### 5. Run the CLI Command
-
-**🎯 Interactive Mode (Recommended):**
-
-Simply run without options and the CLI will guide you:
-
-```bash
-docker-compose run --rm cli scaffold fastapi-crud
-```
-
-The CLI will interactively prompt for:
-
-- 📦 Project name
-- 🏷️ Resource name
-- 📝 Fields definition
-- 🗄️ Database type (SQL or MongoDB)
-- 🔐 Enable authentication?
-
-**⚡ Command-Line Mode (for automation):**
-
-```bash
-docker-compose run --rm cli scaffold fastapi-crud \
-  -p my-gadget-app \
-  -r widget \
-  -f "name:str,color:str,weight:float" \
-  -d sql \
-  --enable-auth
-```
-
-This will:
-
-- ✅ Send the command to the AI backend
-- ✅ Generate complete CRUD boilerplate for your FastAPI project
-- ✅ Use templates for authentication files (fast and reliable)
-- ✅ Save the files to your local directory
-- ✅ Print setup and usage instructions for your new project
-
-> 💡 **Tip:** Use `--enable-auth` to add a complete authentication system with JWT tokens!
+See [foxie-backend/README.md](foxie-backend/README.md) for more details.
 
 ---
 
@@ -265,21 +206,22 @@ Foxie/
 
 ```bash
 # Just run the command and answer the prompts
-docker-compose run --rm cli scaffold fastapi-crud
+foxie scaffold fastapi-crud
 
 # The CLI will ask:
 # - Project name
 # - Resource name
 # - Fields
-# - Max iterations (if agentic enabled)
+# - Database type (SQL or MongoDB)
+# - Enable authentication?
 ```
 
 ### Command-Line Mode
 
-**Standard Mode (Fast):**
+**Standard Mode:**
 
 ```bash
-docker-compose run --rm cli scaffold fastapi-crud \
+foxie scaffold fastapi-crud \
   -p blog-api \
   -r post \
   -f "title:str,content:str,author:str,published:bool"
@@ -288,7 +230,7 @@ docker-compose run --rm cli scaffold fastapi-crud \
 **With Authentication:**
 
 ```bash
-docker-compose run --rm cli scaffold fastapi-crud \
+foxie scaffold fastapi-crud \
   -p ecommerce-api \
   -r product \
   -f "name:str,price:float,stock:int,category:str" \
@@ -331,17 +273,17 @@ Generate scaffolding for different resources by running the command multiple tim
 
 ```bash
 # Generate User resource
-docker-compose run --rm cli scaffold fastapi-crud \
+foxie scaffold fastapi-crud \
   -p my-app \
   -r user \
   -f "username:str,email:str,age:int"
 
 # Generate Product resource
-docker-compose run --rm cli scaffold fastapi-crud \
+foxie scaffold fastapi-crud \
   -p my-app \
   -r product \
   -f "name:str,price:float,stock:int"
-````
+```
 
 ---
 
@@ -360,19 +302,36 @@ docker-compose run --rm cli scaffold fastapi-crud \
 
 ## 🛠️ Development
 
+### Running Locally
+
+For local development, you can run both backend and CLI using Docker:
+
+```bash
+# Clone the repository
+git clone https://github.com/Nalin7parihar/Foxie.git
+cd Foxie
+
+# Start the backend
+docker-compose up -d backend
+
+# Run CLI commands
+docker-compose run --rm cli scaffold fastapi-crud
+```
+
 ### Running Tests
 
 ```bash
 # Backend tests
 docker-compose run --rm backend pytest
 
-# CLI tests
-docker-compose run --rm cli pytest
+# CLI tests (from foxie-cli directory)
+cd foxie-cli
+pytest
 ```
 
 ### Hot Reload Development
 
-For development with hot reload:
+For backend development with hot reload:
 
 ```bash
 docker-compose up backend
@@ -455,3 +414,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ⭐ Star this repo if you find it helpful!
 
 </div>
+````

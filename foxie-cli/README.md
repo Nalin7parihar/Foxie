@@ -105,7 +105,7 @@ Get your Google Gemini API key from: https://makersuite.google.com/app/apikey
 
 ### Backend Configuration
 
-By default, the CLI connects to a backend at `http://127.0.0.1:8000`. If your backend is deployed elsewhere (e.g., on Render), configure the following:
+By default, the CLI connects to the deployed backend at `https://foxie-wsj6.onrender.com`. If you want to use a different backend (e.g., local development), configure the following:
 
 #### Backend URL
 
@@ -127,7 +127,15 @@ You can also add the backend URL to your config file (`~/.config/foxie/config.en
 
 ```bash
 # ~/.config/foxie/config.env
-FOXIE_BACKEND_URL=https://your-backend-url.onrender.com
+FOXIE_BACKEND_URL=https://foxie-wsj6.onrender.com
+GOOGLE_API_KEY=your-gemini-api-key-here
+```
+
+**For local development**, set the backend URL to your local instance:
+
+```bash
+# ~/.config/foxie/config.env
+FOXIE_BACKEND_URL=http://127.0.0.1:8000
 GOOGLE_API_KEY=your-gemini-api-key-here
 ```
 

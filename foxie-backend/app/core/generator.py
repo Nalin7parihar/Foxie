@@ -2,7 +2,6 @@
 Standard mode code generator - one-shot generation.
 Uses Google Gemini with RAG for fast prototyping.
 """
-from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 import os
@@ -14,8 +13,6 @@ from app.core.models import GeneratedCode, CodeFile
 from app.utils.parser import parse_fields, Field
 from app.utils.api_key_manager import APIKeyManager
 from typing import List, Optional
-
-load_dotenv()
 
 
 def _generate_static_auth_files(database_type: str) -> List[CodeFile]:

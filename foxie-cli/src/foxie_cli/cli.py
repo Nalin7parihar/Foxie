@@ -8,12 +8,32 @@ from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
+from dotenv import load_dotenv, dotenv_values
 
 # Assuming your file writer utility is here
 from .utils.file_writer import write_files
 from .utils.template_generator import generate_pyproject_toml, generate_env_file
 # Assuming your Pydantic models for the response are here
 from .core.models import GeneratedCode, CodeFile
+
+# Helper function to get the config directory path (following XDG Base Directory spec)
+def get_config_path() -> Path:
+    """
+    Get the configuration directory path following XDG Base Directory specification.
+    Uses ~/.config/foxie/ on all platforms (works on Linux, macOS, and Windows 10+).
+    """
+    return Path.home() / ".config" / "foxie"
+
+def get_config_file() -> Path:
+    """Get the path to the config file."""
+    return get_config_path() / "config.env"
+
+# Load .env files to populate environment variables
+# This ensures os.getenv() can find GOOGLE_API_KEY from .env files
+load_dotenv()  # Loads .env in current directory
+foxie_config = get_config_file()
+if foxie_config.exists():
+    load_dotenv(foxie_config)  # Also load ~/.config/foxie/config.env
 
 # --- Configuration ---
 # Define the URL of your backend service. Default is localhost.
@@ -39,38 +59,46 @@ def get_api_key() -> Optional[str]:
     """
     Get Google Gemini API key from environment or prompt user.
     Priority:
-    1. GOOGLE_API_KEY environment variable
-    2. .env file in current directory
-    3. ~/.foxie/.env file
+    1. GOOGLE_API_KEY environment variable (includes values loaded from .env files)
+    2. .env file in current directory (fallback if not loaded)
+    3. ~/.config/foxie/config.env file (fallback if not loaded)
     4. Prompt user to enter it
     
     Returns:
         API key string or None
     """
-    # Check environment variable
+    # Check environment variable first (this will include values from .env files
+    # that were loaded by load_dotenv() at module level)
     api_key = os.getenv("GOOGLE_API_KEY")
     if api_key:
-        console.print("[dim]✓ Using API key from environment[/dim]")
+        # Determine source for user feedback
+        env_file = Path(".env")
+        foxie_config = get_config_file()
+        if env_file.exists() and "GOOGLE_API_KEY" in dotenv_values(env_file):
+            console.print("[dim]✓ Using API key from .env file[/dim]")
+        elif foxie_config.exists() and "GOOGLE_API_KEY" in dotenv_values(foxie_config):
+            console.print("[dim]✓ Using API key from config file[/dim]")
+        else:
+            console.print("[dim]✓ Using API key from environment[/dim]")
         return api_key
     
-    # Check .env file in current directory
+    # Fallback: Check .env file in current directory directly
+    # (in case load_dotenv() didn't work for some reason)
     env_file = Path(".env")
     if env_file.exists():
-        from dotenv import dotenv_values
         config = dotenv_values(env_file)
         api_key = config.get("GOOGLE_API_KEY")
         if api_key:
             console.print("[dim]✓ Using API key from .env file[/dim]")
             return api_key
     
-    # Check ~/.foxie/.env
-    foxie_env = Path.home() / ".foxie" / ".env"
-    if foxie_env.exists():
-        from dotenv import dotenv_values
-        config = dotenv_values(foxie_env)
+    # Fallback: Check ~/.config/foxie/config.env directly
+    foxie_config = get_config_file()
+    if foxie_config.exists():
+        config = dotenv_values(foxie_config)
         api_key = config.get("GOOGLE_API_KEY")
         if api_key:
-            console.print("[dim]✓ Using API key from ~/.foxie/.env[/dim]")
+            console.print("[dim]✓ Using API key from config file[/dim]")
             return api_key
     
     # Prompt user
@@ -84,16 +112,16 @@ def get_api_key() -> Optional[str]:
     
     if api_key:
         # Offer to save it
-        save_it = Confirm.ask("\n💾 Save this API key to ~/.foxie/.env for future use?", default=True)
+        config_file = get_config_file()
+        save_it = Confirm.ask(f"\n💾 Save this API key to {config_file} for future use?", default=True)
         if save_it:
-            foxie_dir = Path.home() / ".foxie"
-            foxie_dir.mkdir(exist_ok=True)
-            foxie_env = foxie_dir / ".env"
+            config_dir = get_config_path()
+            config_dir.mkdir(parents=True, exist_ok=True)
             
-            with open(foxie_env, "w") as f:
+            with open(config_file, "w") as f:
                 f.write(f"GOOGLE_API_KEY={api_key}\n")
             
-            console.print(f"[green]✓ API key saved to {foxie_env}[/green]")
+            console.print(f"[green]✓ API key saved to {config_file}[/green]")
     
     return api_key
 
@@ -253,10 +281,13 @@ def scaffold_fastapi_crud(
     # --- Call Backend API ---
     generated_code: GeneratedCode = None
     try:
-        
         # Use a spinner while waiting for the backend
         with console.status("[bold green]🤖 AI is generating your code...", spinner="dots") as status:
-            response = requests.post(scaffold_endpoint, json=request_data, timeout=SCAFFOLD_TIMEOUT) # 3 minutes timeout
+            response = requests.post(
+                scaffold_endpoint, 
+                json=request_data, 
+                timeout=SCAFFOLD_TIMEOUT
+            )
             response.raise_for_status() # Check for HTTP errors
             response_data = response.json()
             
@@ -366,7 +397,7 @@ def scaffold_fastapi_crud(
 def configure_api_key():
     """
     Configure Google Gemini API key for Foxie.
-    Saves the key to ~/.foxie/.env for future use.
+    Saves the key to ~/.config/foxie/config.env for future use.
     """
     console.print(Panel.fit(
         "[bold cyan]🔑 Configure Foxie API Key[/bold cyan]\n"
@@ -383,15 +414,15 @@ def configure_api_key():
         console.print("[red]❌ No API key provided[/red]")
         raise typer.Exit(code=1)
     
-    # Save to ~/.foxie/.env
-    foxie_dir = Path.home() / ".foxie"
-    foxie_dir.mkdir(exist_ok=True)
-    foxie_env = foxie_dir / ".env"
+    # Save to ~/.config/foxie/config.env
+    config_dir = get_config_path()
+    config_dir.mkdir(parents=True, exist_ok=True)
+    config_file = get_config_file()
     
-    with open(foxie_env, "w") as f:
+    with open(config_file, "w") as f:
         f.write(f"GOOGLE_API_KEY={api_key}\n")
     
-    console.print(f"\n[green]✓ API key saved to {foxie_env}[/green]")
+    console.print(f"\n[green]✓ API key saved to {config_file}[/green]")
     console.print("\n[dim]You can now use Foxie without entering your API key each time.[/dim]")
 
 

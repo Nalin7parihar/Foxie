@@ -14,17 +14,19 @@ docker-compose up backend
 
 ## Configuration
 
-Set your Google Gemini API key via environment variable:
+### Environment Variables
 
-```bash
-export GOOGLE_API_KEY="your-api-key"
-```
+- `HOST` - Server host (default: `0.0.0.0`)
+- `PORT` - Server port (default: `8000`)
+- `GEMINI_MODEL` - Gemini model to use (default: `gemini-2.5-flash`)
+- `GENERATION_TEMPERATURE` - Temperature for code generation (default: `0.7`)
 
-Or create a `.env` file in this directory with:
+### Important Notes
 
-```
-GOOGLE_API_KEY=your-api-key
-```
+- **No `.env` file needed** - The backend no longer requires `GOOGLE_API_KEY` in environment variables
+- **Users provide their own API keys** - The Gemini API key is sent by the CLI in each request (users pay for their own usage)
+- **HTTPS encryption** - Render automatically provides HTTPS/TLS, which encrypts all data (including API keys) in transit, preventing interception
+- **API keys are not logged** - The backend never logs API keys to prevent exposure
 
 ## API Endpoints
 

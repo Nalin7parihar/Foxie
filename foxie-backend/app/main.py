@@ -23,7 +23,7 @@ class ScaffoldRequest(BaseModel):
     fields_str: str = Field(..., description="Comma-separated fields string.")
     database_type: str = Field(default="sql", description="Database type: 'sql' or 'mongodb'")
     enable_auth: bool = Field(default=False, description="Enable authentication (User model, auth endpoints)")
-    api_key: Optional[str] = Field(None, description="Google Gemini API key (optional if set in environment)")
+    api_key: str = Field(..., description="Google Gemini API key (required - users provide their own)")
 
 
 app = FastAPI(
@@ -32,13 +32,24 @@ app = FastAPI(
     version=config.version
 )
 
+
 @app.post("/scaffold", response_model=GeneratedCode)
 async def scaffold_feature(request: ScaffoldRequest):
     """
     Main endpoint: Receives a scaffolding request, runs the AI logic,
     and returns the generated code.
+    
+    Security: API keys are encrypted in transit via HTTPS/TLS (provided by Render).
+    API key is not logged to prevent exposure in logs.
     """
     print(f"Received request to scaffold '{request.resource}' for project '{request.project_name}'...")
+    
+    # Validate API key is provided
+    if not request.api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="Google Gemini API key is required. Please provide it in the request."
+        )
 
     try:
         # --- CALL THE REAL AI GENERATOR ---

@@ -7,16 +7,16 @@ from typing import Dict, List, Optional
 from google import genai
 from google.genai import types
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 
 class FileGenerator:
     """Generates individual files with context-aware prompts."""
     
     def __init__(self, api_key: Optional[str] = None):
-        self.client = genai.Client(api_key=api_key or os.getenv("GOOGLE_API_KEY"))
+        # API key must be provided (users use their own keys)
+        if not api_key:
+            raise ValueError("API key is required for file generation")
+        self.client = genai.Client(api_key=api_key)
         # Use gemini-1.5-flash for better free tier limits
         self.model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         

@@ -5,19 +5,41 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "foxie-cli"
 version = "0.1.0"
-description = "A smart AI-powered code scaffolding CLI."
+description = "A smart AI-powered code scaffolding CLI for FastAPI applications. Generate production-ready CRUD features with authentication using Google Gemini AI."
 readme = "README.md"
 requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Foxie", email = "nalin7parihar@gmail.com"}
+]
+keywords = ["fastapi", "cli", "code-generation", "ai", "scaffolding", "crud", "gemini"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
     "google-genai>=1.45.0",
     "pydantic>=2.12.0",
     "python-dotenv>=1.1.1",
     "requests>=2.32.5",
     "typer>=0.19.2",
+    "rich>=13.0.0",
 ]
 
 [project.scripts]
 foxie = "foxie_cli.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/foxie-platform/foxie-cli"
+Documentation = "https://github.com/foxie-platform/foxie-platform"
+Repository = "https://github.com/foxie-platform/foxie-platform"
+Issues = "https://github.com/foxie-platform/foxie-platform/issues"
 
 [project.optional-dependencies]
 dev = [

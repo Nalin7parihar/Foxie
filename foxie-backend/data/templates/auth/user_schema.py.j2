@@ -1,6 +1,5 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
-from app.models.user import User
 
 
 class UserBase(BaseModel):
@@ -25,7 +24,7 @@ class UserUpdate(BaseModel):
 class User(UserBase):
     id: {% if database_type == "sql" %}int{% else %}str{% endif %}
     hashed_password: str
-    
+
     class Config:
         from_attributes = True
 

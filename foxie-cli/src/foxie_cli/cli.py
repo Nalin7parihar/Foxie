@@ -288,6 +288,15 @@ def scaffold_fastapi_crud(
                 timeout=SCAFFOLD_TIMEOUT
             )
             response.raise_for_status() # Check for HTTP errors
+            
+            # Check if response is HTML (error page) instead of JSON
+            content_type = response.headers.get('content-type', '').lower()
+            if 'text/html' in content_type:
+                console.print(f"\n[red]❌ Backend service returned an HTML error page[/red]")
+                console.print("[yellow]    The backend may be down or experiencing issues.[/yellow]")
+                console.print("[dim]    Please check the backend status and try again later.[/dim]")
+                raise typer.Exit(code=1)
+            
             response_data = response.json()
             
             # Response is GeneratedCode
@@ -309,12 +318,36 @@ def scaffold_fastapi_crud(
         console.print(f"[dim]    Current timeout: {SCAFFOLD_TIMEOUT}s. Try: export FOXIE_SCAFFOLD_TIMEOUT=300[/dim]")
         raise typer.Exit(code=1)
     except requests.exceptions.HTTPError as e:
-        error_detail = e.response.text # Get error detail from backend if available
-        console.print(f"\n[red]❌ Backend Error ({e.response.status_code}):[/red]")
-        console.print(f"[red]{error_detail}[/red]")
+        status_code = e.response.status_code
+        
+        # Handle 502 Bad Gateway (service unavailable)
+        if status_code == 502:
+            console.print(f"\n[red]❌ Backend service is currently unavailable (502 Bad Gateway)[/red]")
+            console.print("[yellow]    The backend service may be starting up or experiencing issues.[/yellow]")
+            console.print("[dim]    Please wait a moment and try again. If the problem persists, check the backend status.[/dim]")
+            raise typer.Exit(code=1)
+        
+        # Try to get error detail, but filter out HTML responses
+        error_detail = e.response.text
+        if error_detail and not error_detail.strip().startswith('<!DOCTYPE') and not error_detail.strip().startswith('<html'):
+            # It's a JSON/text error, show it
+            console.print(f"\n[red]❌ Backend Error ({status_code}):[/red]")
+            console.print(f"[red]{error_detail[:500]}[/red]")  # Limit length
+        else:
+            # It's HTML (like Render error page), show generic message
+            console.print(f"\n[red]❌ Backend Error ({status_code}):[/red]")
+            console.print("[yellow]    The backend service returned an error. Please try again later.[/yellow]")
+        
         raise typer.Exit(code=1)
     except Exception as e: # Catch Pydantic validation errors or other issues
-        console.print(f"\n[red]❌ Error processing backend response: {e}[/red]")
+        error_msg = str(e)
+        # Check if it's a JSON decode error (likely HTML response)
+        if "Expecting value" in error_msg or "JSON" in error_msg:
+            console.print(f"\n[red]❌ Backend service returned an invalid response[/red]")
+            console.print("[yellow]    The backend may be experiencing issues or returning an error page.[/yellow]")
+            console.print("[dim]    Please try again in a moment. If the problem persists, check the backend status.[/dim]")
+        else:
+            console.print(f"\n[red]❌ Error processing backend response: {e}[/red]")
         raise typer.Exit(code=1)
     
     if generated_code is None:

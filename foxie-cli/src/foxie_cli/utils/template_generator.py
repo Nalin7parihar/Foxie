@@ -35,6 +35,7 @@ def generate_pyproject_toml(
     if database_type == "sql":
         db_deps = [
             "sqlalchemy",
+            "psycopg2-binary",
         ]
     else:  # mongodb
         db_deps = [

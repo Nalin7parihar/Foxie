@@ -27,13 +27,14 @@ async def close_db():
     if client:
         client.close()
 
-def get_db() -> AsyncIOMotorClient:
+async def get_db() -> AsyncIOMotorClient:
     """
     FastAPI Dependency to get MongoDB database instance.
     Returns the database instance for direct operations.
+    Uses async generator for proper dependency injection.
     """
     if client is None:
         raise RuntimeError("Database not initialized. Call init_db() on startup.")
-    return client[settings.DATABASE_NAME]
+    yield client[settings.DATABASE_NAME]
 # --- END: db_session_mongodb.py.example ---
 

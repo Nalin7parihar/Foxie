@@ -22,12 +22,12 @@ class UserUpdate(BaseModel):
 
 
 class User(UserBase):
-    id: {% if database_type == "sql" %}int{% else %}str{% endif %}
+    id: {{ "int" if database_type == "sql" else "str" }}
     hashed_password: str
 
     class Config:
         from_attributes = True
-
+        
 
 class Token(BaseModel):
     access_token: str
@@ -35,6 +35,6 @@ class Token(BaseModel):
 
 
 class Login(BaseModel):
-    username: str
+    email: EmailStr
     password: str
 

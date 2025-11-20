@@ -48,6 +48,8 @@ def generate_pyproject_toml(
             "python-jose[cryptography]",
             "passlib[bcrypt]",
             "python-multipart",
+            "email-validator",  # Required for Pydantic EmailStr
+            "bcrypt==4.3.0",
         ]
     
     all_deps = base_deps + db_deps + auth_deps

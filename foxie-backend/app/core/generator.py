@@ -117,8 +117,8 @@ def _generate_core_crud_files(
 
 # 必须生成的文件 / REQUIRED FILES
 1. app/core/config.py - 使用STYLE GUIDE中的config.py.example，内容必须完全一致
-2. app/database/db_session.py - 数据库类型：{database_type}，使用相应示例
-3. app/models/base_model.py - 数据库类型：{database_type}，使用相应示例
+2. app/database/{'db_session_mongodb.py' if database_type == 'mongodb' else 'db_session.py'} - 数据库类型：{database_type}，使用相应示例
+3. app/models/{'base_model_mongodb.py' if database_type == 'mongodb' else 'base_model.py'} - 数据库类型：{database_type}，使用相应示例
 4. app/models/{{resource}}.py - 资源模型（{database_type}）
 5. app/schemas/{{resource}}.py - 必须包含：{{resource}}Base、{{resource}}Create、{{resource}}Update、{{resource}}（主ORM模式，from_attributes=True）
 6. app/crud/{{resource}}.py - 创建CRUD类实例模式：
